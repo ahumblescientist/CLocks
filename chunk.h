@@ -18,11 +18,12 @@ typedef struct {
 	size_t count;
 	uint8_t *code;
 	ValueArray constants;
+	size_t *lines;
 } Chunk;
 
 void initChunk(Chunk *);
-void writeChunk(Chunk *, uint8_t);
+void writeChunk(Chunk *, uint8_t, size_t );
 uint16_t addConstant(Chunk *, Value); // return index of the constant 
-void writeConstant(Chunk *, Value v);
+void writeConstant(Chunk *, Value v, size_t);
 
 #endif

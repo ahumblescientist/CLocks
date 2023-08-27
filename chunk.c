@@ -5,16 +5,20 @@ void initChunk(Chunk *chunk) {
 	chunk->count = 0;
 	chunk->used= 0;
 	chunk->code = (uint8_t *)0;
+	chunk->lines = NULL;
 	initValueArray(&chunk->constants);
 }
 
-void writeChunk(Chunk *chunk, uint8_t byte) {
+void writeChunk(Chunk *chunk, uint8_t byte, size_t line) {
 	if(chunk->count == chunk->used) {
 		size_t oldcount = chunk->count;
 		chunk->count = GROW_CAPACITY(chunk->count);
 		chunk->code = GROW_ARRAY(uint8_t, chunk->code, oldcount, chunk->count);
+		chunk->lines = GROW_ARRAY(size_t, chunk->lines, oldcount, chunk->count);
 	}
-	chunk->code[chunk->used++] = byte;
+	chunk->code[chunk->used] = byte;
+	chunk->lines[chunk->used] = line;
+	chunk->used++;
 }
 
 void freeChunk(Chunk *chunk) {
@@ -27,14 +31,14 @@ uint16_t addConstant(Chunk *chunk, Value val) {
 	return chunk->constants.used - 1;
 }
 
-void writeConstant(Chunk *chunk, Value v) {
+void writeConstant(Chunk *chunk, Value v, size_t line) {
 	uint16_t index = addConstant(chunk, v);
 	if(index > 255) {
-		writeChunk(chunk, OP_CONSTANT_LONG);
-		writeChunk(chunk, index & 0xFF);
-		writeChunk(chunk, index >> 8);
+		writeChunk(chunk, OP_CONSTANT_LONG, line);
+		writeChunk(chunk, index & 0xFF, line);
+		writeChunk(chunk, index >> 8, line);
 	} else {
-		writeChunk(chunk, OP_CONSTANT);
-		writeChunk(chunk, index);
+		writeChunk(chunk, OP_CONSTANT, line);
+		writeChunk(chunk, index, line);
 	}
 }

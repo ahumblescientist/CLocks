@@ -17,7 +17,6 @@ size_t simpleInstruction(char *name) {
 }
 
 size_t constantInstruction(char *name, Chunk *chunk, size_t current) {
-	// TODO
 	uint8_t constant = chunk->code[current+1];
 	printf("%-16s i:%04d '", name, constant);
 	printValue(chunk->constants.values[constant]);
@@ -26,7 +25,6 @@ size_t constantInstruction(char *name, Chunk *chunk, size_t current) {
 }
 
 size_t constantLongInstruction(char *name, Chunk *chunk, size_t current) {
-	// TODO
 	uint8_t constant1 = chunk->code[current+1];
 	uint8_t constant2 = chunk->code[current+2];
 	uint16_t index = (constant2 << 8) | constant1;
@@ -38,6 +36,7 @@ size_t constantLongInstruction(char *name, Chunk *chunk, size_t current) {
 
 void disassembleInstruction(Chunk *chunk, size_t *i) {
 	uint8_t instruction = chunk->code[*i];
+	printf("%04zu ", chunk->lines[*i]);
 	switch(instruction) {
 		case OP_RETURN:
 			*i += simpleInstruction("OP_RETURN");
