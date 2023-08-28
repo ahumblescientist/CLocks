@@ -9,6 +9,11 @@ void initChunk(Chunk *chunk) {
 	initValueArray(&chunk->constants);
 }
 
+void freeChunk(Chunk *chunk) {
+	FREE_ARRAY(uint8_t, chunk->code, chunk->count);
+	freeValueArray(&chunk->constants);
+}
+
 void writeChunk(Chunk *chunk, uint8_t byte, size_t line) {
 	if(chunk->count == chunk->used) {
 		size_t oldcount = chunk->count;
@@ -21,10 +26,6 @@ void writeChunk(Chunk *chunk, uint8_t byte, size_t line) {
 	chunk->used++;
 }
 
-void freeChunk(Chunk *chunk) {
-	FREE_ARRAY(uint8_t, chunk->code, chunk->count);
-	freeValueArray(&chunk->constants);
-}
 
 uint16_t addConstant(Chunk *chunk, Value val) {
 	writeValueArray(&chunk->constants, val);

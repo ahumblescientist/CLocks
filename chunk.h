@@ -10,6 +10,11 @@
 typedef enum {
 	OP_CONSTANT,
 	OP_CONSTANT_LONG,
+	OP_NEGATE,
+	OP_ADD,
+	OP_SUBTRACT,
+	OP_MULTIPLY,
+	OP_DIVIDE,
 	OP_RETURN,
 } OPCODE;
 
@@ -22,6 +27,7 @@ typedef struct {
 } Chunk;
 
 void initChunk(Chunk *);
+void freeChunk(Chunk *);
 void writeChunk(Chunk *, uint8_t, size_t );
 uint16_t addConstant(Chunk *, Value); // return index of the constant 
 void writeConstant(Chunk *, Value v, size_t);

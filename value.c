@@ -16,7 +16,7 @@ void writeValueArray(ValueArray *arr, Value val) {
 }
 
 void freeValueArray(ValueArray *arr) {
-	FREE_ARRAY(Value, arr, arr->count);
+	FREE_ARRAY(Value, arr->values, arr->count);
 }
 
 void printValue(Value v) {
