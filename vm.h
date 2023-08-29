@@ -4,6 +4,7 @@
 #include "chunk.h"
 #include "debug.h"
 #include "value.h"
+#include "lexer.h"
 
 #include <stdio.h>
 
@@ -28,6 +29,6 @@ void freeVM();
 void push(Value);
 Value pop();
 
-InterpretResult interpret(Chunk *chunk);
+InterpretResult interpret(char *);
 
 #endif

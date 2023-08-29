@@ -1,4 +1,5 @@
 #include "vm.h"
+#include "compiler.h"
 
 VM vm;
 
@@ -89,9 +90,8 @@ END:
 #undef BINARY_OP
 }
 
-InterpretResult interpret(Chunk *chunk) {
-	vm.chunk = chunk;
-	vm.pc = chunk->code;
+InterpretResult interpret(char *source) {
+	compile(source);
 	return run();
 }
 
