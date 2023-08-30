@@ -92,6 +92,6 @@ END:
 
 InterpretResult interpret(char *source) {
 	compile(source);
-	return run();
+	return INTERPRET_OK;
 }
 

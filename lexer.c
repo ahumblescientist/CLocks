@@ -56,6 +56,10 @@ uint8_t isDigit(char c) {
 	return (c >= '0' && c <= '9');
 }
 
+uint8_t isAlpha(char c) {
+	return ((c <= 'Z' && c >= 'A') || (c <= 'z' && c >= 'a') || c == '_');
+}
+
 Token string() {
 	while(peek() != '"' && !isAtEnd()) {
 		if(peek() == '\n') lexer.line++;
@@ -73,6 +77,47 @@ Token number() {
 	if(peek() == '.') 									 advance();
 	while(isDigit(peek()) && !isAtEnd()) advance();
 	return makeToken(TOKEN_NUMBER);
+}
+
+TokenType compare(TokenType ret, char *val, size_t rest, size_t start) {
+	if((start + rest == (lexer.current - lexer.start)) && !memcmp(val, lexer.start + start, rest)) {
+		return ret;
+	}
+	return TOKEN_IDENTIFIER;
+}
+
+TokenType identifierType() {
+	switch(*lexer.start) {
+		case 'w':	return compare(TOKEN_WHILE, "hile", 4, 1); 
+		case 'i':	return compare(TOKEN_IF, "f", 1, 1); 
+		case 'e':	return compare(TOKEN_ELSE, "lse", 3, 1); 
+		case 'T':	return compare(TOKEN_TRUE, "rue", 3, 1); 
+		case 'F':	return compare(TOKEN_FALSE, "alse", 4, 1); 
+		case 'N':	return compare(TOKEN_NIL, "il", 2, 1); 
+		case 'o':	return compare(TOKEN_OR, "r", 1, 1); 
+		case 'a':	return compare(TOKEN_AND, "nd", 2, 1); 
+		case 'r':	return compare(TOKEN_RETURN, "eturn", 5, 1); 
+		case 'v':	return compare(TOKEN_VAR, "ar", 2, 1); 
+		case 's':	return compare(TOKEN_SUPER, "uper", 4, 1); 
+		case 'p':	return compare(TOKEN_PRINT, "rint", 4, 1); 
+		case 'c':	return compare(TOKEN_CLASS, "lass", 4, 1); 
+		case 'f': {
+			switch(*(lexer.start+1)) {
+				case 'u': return compare(TOKEN_FUN, "nction", 6, 2);
+				case 'o': return compare(TOKEN_FUN, "r", 1, 2);
+				default: break;
+			}
+		}
+		default: break;
+	}
+	return TOKEN_IDENTIFIER;
+}
+
+Token identifier() {
+	while( isAlpha(peek()) || isDigit(peek()) ) {
+		advance();
+	}
+	return makeToken(identifierType());
 }
 
 void skipSpaces() {
@@ -108,6 +153,7 @@ Token scanToken() {
 	if(isAtEnd()) return makeToken(TOKEN_EOF);
 	char c = advance();
 	if(isDigit(c)) return number();
+	if(isAlpha(c)) return identifier();
 	switch(c) {
 		case '(': return makeToken(TOKEN_LEFT_PAREN); break;
 		case ')': return makeToken(TOKEN_RIGHT_PAREN); break;
