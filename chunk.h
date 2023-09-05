@@ -30,6 +30,6 @@ void initChunk(Chunk *);
 void freeChunk(Chunk *);
 void writeChunk(Chunk *, uint8_t, size_t );
 uint16_t addConstant(Chunk *, Value); // return index of the constant 
-void writeConstant(Chunk *, Value v, size_t);
+uint8_t writeConstant(Chunk *, Value v, size_t);
 
 #endif

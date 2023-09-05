@@ -32,14 +32,17 @@ uint16_t addConstant(Chunk *chunk, Value val) {
 	return chunk->constants.used - 1;
 }
 
-void writeConstant(Chunk *chunk, Value v, size_t line) {
+uint8_t writeConstant(Chunk *chunk, Value v, size_t line) {
 	uint16_t index = addConstant(chunk, v);
 	if(index > 255) {
 		writeChunk(chunk, OP_CONSTANT_LONG, line);
 		writeChunk(chunk, index & 0xFF, line);
 		writeChunk(chunk, index >> 8, line);
-	} else {
+	} else if(index < UINT16_MAX) {
 		writeChunk(chunk, OP_CONSTANT, line);
 		writeChunk(chunk, index, line);
+	} else {
+		return 1;
 	}
+	return 0;
 }

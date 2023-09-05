@@ -142,13 +142,14 @@ void skipSpaces() {
 				break;
 			}
 			default:
-				break;
+				return;
 		}
 	}
 }
 
 
 Token scanToken() {
+	skipSpaces();
 	lexer.start = lexer.current;
 	if(isAtEnd()) return makeToken(TOKEN_EOF);
 	char c = advance();

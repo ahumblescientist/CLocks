@@ -91,7 +91,17 @@ END:
 }
 
 InterpretResult interpret(char *source) {
-	compile(source);
-	return INTERPRET_OK;
+	Chunk chunk;
+	initChunk(&chunk);
+	uint8_t compileResult = compile(source, &chunk);
+	if(!compileResult) {
+		freeChunk(&chunk);
+		return INTERPRET_COMPILE_ERROR;
+	}
+	vm.chunk = &chunk;
+	vm.pc = chunk.code;
+	InterpretResult runResult = run();
+	freeChunk(&chunk);
+	return runResult;
 }
 
