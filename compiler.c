@@ -42,7 +42,7 @@ void errorAt(Token *, char *), errorAtCurrnt(char *), error(char *),
 addByte(uint8_t), endCompiler(), addReturn();
 
 static void advance(), consume(TokenType, char *), number();
-void expression(), parsePrec(Precedence), grouping(), unary(), binary();
+void expression(), parsePrec(Precedence), grouping(), unary(), binary(), ternary();
 
 ParseRule rules[TOKEN_EOF+1] = {
   [TOKEN_LEFT_PAREN]    = {grouping, NULL,   PREC_NONE},
@@ -84,6 +84,8 @@ ParseRule rules[TOKEN_EOF+1] = {
   [TOKEN_VAR]           = {NULL,     NULL,   PREC_NONE},
   [TOKEN_WHILE]         = {NULL,     NULL,   PREC_NONE},
   [TOKEN_ERROR]         = {NULL,     NULL,   PREC_NONE},
+  [TOKEN_QMARK]         = {NULL,     ternary,   PREC_PRIMARY},
+  [TOKEN_THEN]         =  {NULL,     NULL,   PREC_NONE},
   [TOKEN_EOF]           = {NULL,     NULL,   PREC_NONE},
 };
 
@@ -155,6 +157,13 @@ static void number() {
 
 ParseRule *getRule(TokenType type) {
 	return &rules[type];
+}
+
+void ternary() {
+  expression();
+  consume(TOKEN_THEN, "Expected ':' for ternary expression");
+  expression();
+  addByte(OP_TERNARY);
 }
 
 void grouping() {

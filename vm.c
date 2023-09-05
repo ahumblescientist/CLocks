@@ -41,6 +41,13 @@ Value readConstantLong() {
 	return vm.chunk->constants.values[addr];
 }
 
+void TERNARY() {
+	Value v2 = pop();
+	Value v1 = pop();
+	Value cond = pop();
+	push(cond ? v1 : v2);
+}
+
 InterpretResult run() {
 	uint8_t instruction;
 #define BINARY_OP(o)\
@@ -80,6 +87,7 @@ InterpretResult run() {
 			case OP_SUBTRACT: BINARY_OP(-); break;
 			case OP_MULTIPLY: BINARY_OP(*); break;
 			case OP_DIVIDE: BINARY_OP(/); break;
+			case OP_TERNARY: TERNARY(); break;
 			case OP_RETURN:
 				goto END;
 				break;
