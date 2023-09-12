@@ -43,7 +43,7 @@ uint8_t match(char c) {
 	return 1;
 }
 
-char peek() {
+static char peek() {
 	return *lexer.current;
 }
 
@@ -167,8 +167,6 @@ Token scanToken() {
 		case '+': return makeToken(TOKEN_PLUS); break;
 		case '*': return makeToken(TOKEN_STAR); break;
 		case '/': return makeToken(TOKEN_SLASH); break;
-		case '?': return makeToken(TOKEN_QMARK); break;
-		case ':': return makeToken(TOKEN_THEN); break;
 		case '!': {
 			if(match('=')) return makeToken(TOKEN_BANG_EQUAL);
 			return makeToken(TOKEN_BANG);

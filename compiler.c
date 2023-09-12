@@ -41,8 +41,8 @@ Chunk *currentChunk();
 void errorAt(Token *, char *), errorAtCurrnt(char *), error(char *),
 addByte(uint8_t), endCompiler(), addReturn();
 
-static void advance(), consume(TokenType, char *), number();
-void expression(), parsePrec(Precedence), grouping(), unary(), binary(), ternary();
+static void advance(), consume(TokenType, char *), number(), boolean();
+void expression(), parsePrec(Precedence), grouping(), unary(), binary();
 
 ParseRule rules[TOKEN_EOF+1] = {
   [TOKEN_LEFT_PAREN]    = {grouping, NULL,   PREC_NONE},
@@ -56,7 +56,7 @@ ParseRule rules[TOKEN_EOF+1] = {
   [TOKEN_SEMICOLON]     = {NULL,     NULL,   PREC_NONE},
   [TOKEN_SLASH]         = {NULL,     binary, PREC_FACTOR},
   [TOKEN_STAR]          = {NULL,     binary, PREC_FACTOR},
-  [TOKEN_BANG]          = {NULL,     NULL,   PREC_NONE},
+  [TOKEN_BANG]          = {unary,     NULL,   PREC_NONE},
   [TOKEN_BANG_EQUAL]    = {NULL,     NULL,   PREC_NONE},
   [TOKEN_EQUAL]         = {NULL,     NULL,   PREC_NONE},
   [TOKEN_EQUAL_EQUAL]   = {NULL,     NULL,   PREC_NONE},
@@ -70,22 +70,20 @@ ParseRule rules[TOKEN_EOF+1] = {
   [TOKEN_AND]           = {NULL,     NULL,   PREC_NONE},
   [TOKEN_CLASS]         = {NULL,     NULL,   PREC_NONE},
   [TOKEN_ELSE]          = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_FALSE]         = {NULL,     NULL,   PREC_NONE},
+  [TOKEN_FALSE]         = {boolean,     NULL,   PREC_NONE},
   [TOKEN_FOR]           = {NULL,     NULL,   PREC_NONE},
   [TOKEN_FUN]           = {NULL,     NULL,   PREC_NONE},
   [TOKEN_IF]            = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_NIL]           = {NULL,     NULL,   PREC_NONE},
+  [TOKEN_NIL]           = {boolean,     NULL,   PREC_NONE},
   [TOKEN_OR]            = {NULL,     NULL,   PREC_NONE},
   [TOKEN_PRINT]         = {NULL,     NULL,   PREC_NONE},
   [TOKEN_RETURN]        = {NULL,     NULL,   PREC_NONE},
   [TOKEN_SUPER]         = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_THIS]          = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_TRUE]          = {NULL,     NULL,   PREC_NONE},
+  [TOKEN_TRUE]          = {boolean,     NULL,   PREC_NONE},
   [TOKEN_VAR]           = {NULL,     NULL,   PREC_NONE},
   [TOKEN_WHILE]         = {NULL,     NULL,   PREC_NONE},
   [TOKEN_ERROR]         = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_QMARK]         = {NULL,     ternary,   PREC_PRIMARY},
-  [TOKEN_THEN]         =  {NULL,     NULL,   PREC_NONE},
+  [TOKEN_THIS]         =  {NULL,     NULL,   PREC_NONE},
   [TOKEN_EOF]           = {NULL,     NULL,   PREC_NONE},
 };
 
@@ -148,22 +146,25 @@ void endCompiler() {
 	addReturn();
 }
 
+static void boolean() {
+  if(parser.prev.type == TOKEN_TRUE) {
+    addByte(OP_TRUE);
+  } else if(parser.prev.type == TOKEN_FALSE) {
+    addByte(OP_FALSE);
+  } else {
+    addByte(OP_NIL);
+  }
+}
+
 static void number() {
 	double value = strtod(parser.prev.start, NULL);
-	if(writeConstant(currentChunk(), value, parser.prev.line)) {
+	if(writeConstant(currentChunk(), makeNumber(value), parser.prev.line)) {
 		error("Too many constants in one chunk, constants number can only be in the range [0x00-0xFFFF]");
 	}
 }
 
 ParseRule *getRule(TokenType type) {
 	return &rules[type];
-}
-
-void ternary() {
-  expression();
-  consume(TOKEN_THEN, "Expected ':' for ternary expression");
-  expression();
-  addByte(OP_TERNARY);
 }
 
 void grouping() {
@@ -176,6 +177,7 @@ void unary() {
 	parsePrec(PREC_UNARY);
 	switch(operator) {
 		case TOKEN_MINUS: addByte(OP_NEGATE); break;
+		case TOKEN_BANG: addByte(OP_NOT); break;
 		default: break;
 	}
 }

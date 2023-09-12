@@ -47,6 +47,15 @@ void disassembleInstruction(Chunk *chunk, size_t *i) {
 		case OP_CONSTANT_LONG:
 			*i += constantLongInstruction("OP_CONSTANT_LONG", chunk, *i);
 			break;
+		case OP_TRUE:
+			*i += simpleInstruction("OP_TRUE");
+			break;
+		case OP_FALSE:
+			*i += simpleInstruction("OP_FALSE");
+			break;
+		case OP_NIL:
+			*i += simpleInstruction("OP_NIL");
+			break;
 		default:
 			break;
 	}
