@@ -69,6 +69,15 @@ void NOT() {
 	push(makeBool(getBool(pop()) ? 0x00 : 0xFF));
 }
 
+void valuesEqual(Value a, Value b) {
+	if(a.type != b.type) push(makeBool(0x00));
+	switch(a.type) {
+		case VALUE_NUMBER: push(makeBool(getNumber(a) == getNumber(b))); break;
+		case VALUE_BOOL: push(makeBool(getNumber(a) == getNumber(b))); break;
+		case VALUE_NIL: push(makeBool(0xFF)); break;
+	}
+}
+
 InterpretResult run() {
 	uint8_t instruction;
 #define BINARY_OP(o)\
@@ -79,6 +88,13 @@ InterpretResult run() {
 				push(makeNumber(x o y));\
 	} while(0)
 
+#define BOOL_OP(o)\
+	do {\
+		if(!(isNumber(peek(0)) && isNumber(peek(1)))) { runtimeError("Operand must be a number"); return INTERPRET_RUNTIME_ERROR; }\
+		double y = getNumber(pop());\
+		double x = getNumber(pop());\
+				push(makeBool(x o y));\
+	}while(0)
 
 	while(1) {
 		#ifdef DEBUG_ENABLED
@@ -117,6 +133,14 @@ InterpretResult run() {
 			case OP_FALSE: push(makeBool(0x00)); break;
 			case OP_NIL: push(makeNil()); break;
 			case OP_NOT: NOT(); break;
+			case OP_EQUAL: {
+				Value a = pop();
+				Value b = pop();
+				valuesEqual(a, b);
+				break;
+										 }
+			case OP_GREATER: BOOL_OP(>); break;
+			case OP_LESS: BOOL_OP(<); break;
 			case OP_RETURN:
 				goto END;
 				break;

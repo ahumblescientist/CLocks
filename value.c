@@ -31,7 +31,7 @@ void printValue(Value v) {
 Value makeBool(uint8_t v) {
 	Value ret;
 	ret.type = VALUE_BOOL;
-	ret.as.boolean = v;
+	ret.as.boolean = v ? 0xFF : 0x00;
 	return ret;
 }
 

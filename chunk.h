@@ -19,6 +19,9 @@ typedef enum {
 	OP_FALSE,
 	OP_TRUE,
 	OP_NOT,
+	OP_EQUAL,
+	OP_GREATER,
+	OP_LESS,
 	OP_RETURN,
 } OPCODE;
 
