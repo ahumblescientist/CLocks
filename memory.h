@@ -10,8 +10,10 @@
 	(type *)reallocate(P, prev * sizeof(type), current * sizeof(type))
 
 #define FREE_ARRAY(type, P, prev)\
-	reallocate(P, sizeof(type) * prev, 0);
+	reallocate(P, sizeof(type) * prev, 0)
 
+#define ALLOCATE(T, S)\
+	(T*)reallocate(NULL, 0, sizeof(T) * S)
 
 void *reallocate(void *, size_t, size_t);
 

@@ -1,9 +1,8 @@
 #include "compiler.h"
+#include "obj.h"
 
 
 Chunk *compillingChunk;
-
-
 
 struct Parser {
 	Token current;
@@ -41,7 +40,7 @@ Chunk *currentChunk();
 void errorAt(Token *, char *), errorAtCurrnt(char *), error(char *),
 addByte(uint8_t), endCompiler(), addReturn();
 
-static void advance(), consume(TokenType, char *), number(), boolean();
+static void advance(), consume(TokenType, char *), number(), boolean(), string();
 void expression(), parsePrec(Precedence), grouping(), unary(), binary();
 
 ParseRule rules[TOKEN_EOF+1] = {
@@ -65,7 +64,7 @@ ParseRule rules[TOKEN_EOF+1] = {
   [TOKEN_LESS]          = {NULL,     binary,   PREC_COMPARISON},
   [TOKEN_LESS_EQUAL]    = {NULL,     binary,   PREC_COMPARISON},
   [TOKEN_IDENTIFIER]    = {NULL,     NULL,   PREC_NONE},
-  [TOKEN_STRING]        = {NULL,     NULL,   PREC_NONE},
+  [TOKEN_STRING]        = {string,     NULL,   PREC_NONE},
   [TOKEN_NUMBER]        = {number,   NULL,   PREC_NONE},
   [TOKEN_AND]           = {NULL,     NULL,   PREC_NONE},
   [TOKEN_CLASS]         = {NULL,     NULL,   PREC_NONE},
@@ -162,6 +161,11 @@ static void number() {
 		error("Too many constants in one chunk, constants number can only be in the range [0x00-0xFFFF]");
 	}
 }
+
+static void string() {
+  writeConstant(currentChunk(), makeObj((Obj *)copyString(parser.prev.start + 1llu, parser.prev.length - 2)), parser.prev.line);
+}
+
 
 ParseRule *getRule(TokenType type) {
 	return &rules[type];

@@ -75,6 +75,7 @@ void valuesEqual(Value a, Value b) {
 		case VALUE_NUMBER: push(makeBool(getNumber(a) == getNumber(b))); break;
 		case VALUE_BOOL: push(makeBool(getNumber(a) == getNumber(b))); break;
 		case VALUE_NIL: push(makeBool(0xFF)); break;
+		default: break;
 	}
 }
 

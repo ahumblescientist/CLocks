@@ -5,10 +5,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+typedef struct Obj Obj;
+
 typedef enum {
 	VALUE_NUMBER,
 	VALUE_BOOL,
 	VALUE_NIL,
+	VALUE_OBJ,
 } ValueType;
 
 typedef struct {
@@ -16,6 +19,7 @@ typedef struct {
 	union {
 		uint8_t boolean;
 		double number;
+		Obj *obj;
 	} as;
 } Value;
 
@@ -31,10 +35,12 @@ void writeValueArray(ValueArray *, Value);
 void freeValueArray(ValueArray *);
 void printValue(Value);
 
-Value makeBool(uint8_t), makeNumber(double), makeNil();
+Value makeBool(uint8_t), makeNumber(double), makeNil(), makeObj(Obj *);
 
 uint8_t getBool(Value);
 double getNumber(Value);
-uint8_t isBool(Value), isNumber(Value), isNil(Value);
+Obj *getObj(Value);
+
+uint8_t isBool(Value), isNumber(Value), isNil(Value), isObj(Value);
 
 #endif

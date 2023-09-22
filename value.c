@@ -1,4 +1,5 @@
 #include "value.h"
+#include "obj.h"
 
 void initValueArray(ValueArray *arr) {
 	arr->used = 0;
@@ -24,6 +25,7 @@ void printValue(Value v) {
 		case VALUE_BOOL: printf(getBool(v) ? "True" : "False"); break;
 		case VALUE_NIL: printf("Nil"); break;
 		case VALUE_NUMBER: printf("%f", getNumber(v)); break;
+		case VALUE_OBJ: printObj(v); break;
 		default: break;
 	}
 }
@@ -48,6 +50,13 @@ Value makeNil() {
 	return ret;
 }
 
+Value makeObj(Obj *v) {
+	Value ret;
+	ret.type = VALUE_OBJ;
+	ret.as.obj = v;
+	return ret;
+}
+
 uint8_t getBool(Value val) {
 	return val.as.boolean;
 } 
@@ -56,10 +65,13 @@ double getNumber(Value val) {
 	return val.as.number;	
 }
 
+Obj *getObj(Value v) {
+	return v.as.obj;
+}
+
 uint8_t isNumber(Value v) {
 	return v.type == VALUE_NUMBER;
 }
-
 
 uint8_t isBool(Value v) {
 	return v.type == VALUE_BOOL;
@@ -67,4 +79,8 @@ uint8_t isBool(Value v) {
 
 uint8_t isNil(Value v) {
 	return v.type == VALUE_NIL;
+}
+
+uint8_t isObj(Value v) {
+	return v.type == VALUE_OBJ;
 }
