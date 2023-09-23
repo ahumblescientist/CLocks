@@ -1,6 +1,7 @@
 #include "obj.h"
 #include "string.h"
 #include "memory.h"
+#include "vm.h"
 
 #define ALLOCATE_OBJ(T, t)\
 	(T *)allocateObject(sizeof(T), t)
@@ -28,6 +29,10 @@ ObjString *copyString(char *start, size_t size) {
 	return allocateString(chars, size);
 }
 
+ObjString *takeString(char *start, size_t size) {
+	return allocateString(start, size);
+}
+
 ObjString *allocateString(char *cstr, size_t size) {
 	ObjString *string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
 	string->cstr = cstr;
@@ -38,6 +43,8 @@ ObjString *allocateString(char *cstr, size_t size) {
 Obj *allocateObject(size_t size, ObjType type) {
 	Obj *object = (Obj *)reallocate(NULL, 0, size);
 	object->type = type;
+	object->next = vm.objHead;
+	vm.objHead = object;
 	return object;
 }
 

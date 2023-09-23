@@ -5,6 +5,7 @@
 #include "debug.h"
 #include "value.h"
 #include "lexer.h"
+#include "obj.h"
 
 #include <stdio.h>
 
@@ -15,7 +16,10 @@ typedef struct {
 	uint8_t *pc;
 	Value stack[STACK_MAX];
 	Value *sp;
+	Obj *objHead;
 } VM;
+
+extern VM vm;
 
 typedef enum {
 	INTERPRET_OK,

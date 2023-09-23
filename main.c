@@ -52,5 +52,6 @@ int main(int argc, char **argv) {
 	} else {
 		printf("Usage: %s [file.lox]", argv[0]);
 	}
+	freeVM();
 	return 0;
 }

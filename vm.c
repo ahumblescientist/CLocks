@@ -1,10 +1,12 @@
 #include "vm.h"
 #include "compiler.h"
+#include "obj.h"
 #include <stdarg.h>
-
-VM vm;
+#include <string.h>
 
 #define DEBUG_ENABLED
+
+VM vm;
 
 void resetStack() {
 	vm.sp = (&vm.stack[0]);
@@ -15,6 +17,7 @@ void initVM() {
 }
 
 void freeVM() {
+	freeObjects();
 }
 
 void push(Value value) {
@@ -69,14 +72,47 @@ void NOT() {
 	push(makeBool(getBool(pop()) ? 0x00 : 0xFF));
 }
 
+Value objEqual(Value a, Value b) {
+	if(objType(a) != objType(b)) return makeBool(0x00);
+	switch(objType(a)) {
+		case OBJ_STRING: {
+			if(getString(a)->length != getString(b)->length) return makeBool(0x00);
+			if(memcmp(getCString(a), getCString(b), getString(a)->length)) return makeBool(0x00);
+			break;
+		}
+		default: break;
+	}
+	return makeBool(0xFF);
+}
+
 void valuesEqual(Value a, Value b) {
 	if(a.type != b.type) push(makeBool(0x00));
 	switch(a.type) {
 		case VALUE_NUMBER: push(makeBool(getNumber(a) == getNumber(b))); break;
 		case VALUE_BOOL: push(makeBool(getNumber(a) == getNumber(b))); break;
 		case VALUE_NIL: push(makeBool(0xFF)); break;
+		case VALUE_OBJ: push(objEqual(a, b)); break;
 		default: break;
 	}
+}
+
+void addStrings() {
+	Value b = (pop());
+	Value a = (pop());
+	size_t length = getString(a)->length + getString(b)->length; 
+	char *s1 = getCString(a);
+	char *s2 = getCString(b);
+	size_t l1 = getString(a)->length;
+	size_t l2 = getString(b)->length;
+	char *temp = ALLOCATE(char, length + 1);
+	for(size_t i=0;i<l1;i++) {
+		temp[i] = s1[i];
+	}
+	for(size_t i=0;i<l2;i++) {
+		temp[l1+i] = s2[i];
+	}
+	temp[length] = '\0';
+	push(makeObj((Obj *)takeString(temp, length)));
 }
 
 InterpretResult run() {
@@ -126,7 +162,20 @@ InterpretResult run() {
 					*(vm.sp - 1) = makeNumber(-getNumber(*(vm.sp - 1)));
 					break;
 											}
-			case OP_ADD: BINARY_OP(+); break;
+			case OP_ADD: {
+				Value a = peek(0);
+				Value b = peek(1);
+				if(isString(a) && isString(b)) {
+					addStrings();
+				} else if(isNumber(a) && isNumber(b)) {
+					pop();
+					pop();
+					push(makeNumber(getNumber(a) + getNumber(b)));
+				} else {
+					runtimeError("Operands must be of the type number or string");
+				}
+				break;
+			}
 			case OP_SUBTRACT: BINARY_OP(-); break;
 			case OP_MULTIPLY: BINARY_OP(*); break;
 			case OP_DIVIDE: BINARY_OP(/); break;

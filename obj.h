@@ -9,6 +9,7 @@ typedef enum {
 
 struct Obj {
 	ObjType type;
+	Obj *next;
 };
 
 typedef struct {
@@ -20,6 +21,7 @@ typedef struct {
 ObjType objType(Value);
 ObjString *getString(Value);
 ObjString *copyString(char *, size_t);
+ObjString *takeString(char *, size_t);
 ObjString *allocateString(char *, size_t);
 Obj *allocateObject(size_t, ObjType);
 
