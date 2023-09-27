@@ -22,21 +22,33 @@ char *getCString(Value v) {
 	return ((ObjString *)(getObj(v)))->cstr;
 }
 
+uint32_t hashString(char *str, size_t length) {
+  uint32_t hash = 2166136261u;
+  for (int i = 0; i < length; i++) {
+    hash ^= (uint8_t)str[i];
+    hash *= 16777619;
+  }
+	return hash;
+}
+
 ObjString *copyString(char *start, size_t size) {
+	uint32_t hash = hashString(start, size);
 	char *chars = ALLOCATE(char, size+1);
 	memcpy(chars, start, size);
 	chars[size] = '\0';
-	return allocateString(chars, size);
+	return allocateString(chars, size, hash);
 }
 
 ObjString *takeString(char *start, size_t size) {
-	return allocateString(start, size);
+	uint32_t hash = hashString(start, size);
+	return allocateString(start, size, hash);
 }
 
-ObjString *allocateString(char *cstr, size_t size) {
+ObjString *allocateString(char *cstr, size_t size, uint32_t hash) {
 	ObjString *string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
 	string->cstr = cstr;
 	string->length = size;
+	string->hash = hash;
 	return string;
 }
 
