@@ -2,6 +2,7 @@
 #define VM_H
 
 #include "chunk.h"
+#include "table.h"
 #include "debug.h"
 #include "value.h"
 #include "lexer.h"
@@ -17,6 +18,7 @@ typedef struct {
 	Value stack[STACK_MAX];
 	Value *sp;
 	Obj *objHead;
+	Table strings;
 } VM;
 
 extern VM vm;

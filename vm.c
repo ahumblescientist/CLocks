@@ -14,9 +14,11 @@ void resetStack() {
 
 void initVM() {
 	resetStack();
+	tableInit(&vm.strings);
 }
 
 void freeVM() {
+	tableFree(&vm.strings);
 	freeObjects();
 }
 
@@ -72,18 +74,6 @@ void NOT() {
 	push(makeBool(getBool(pop()) ? 0x00 : 0xFF));
 }
 
-Value objEqual(Value a, Value b) {
-	if(objType(a) != objType(b)) return makeBool(0x00);
-	switch(objType(a)) {
-		case OBJ_STRING: {
-			if(getString(a)->length != getString(b)->length) return makeBool(0x00);
-			if(memcmp(getCString(a), getCString(b), getString(a)->length)) return makeBool(0x00);
-			break;
-		}
-		default: break;
-	}
-	return makeBool(0xFF);
-}
 
 void valuesEqual(Value a, Value b) {
 	if(a.type != b.type) push(makeBool(0x00));
@@ -91,7 +81,7 @@ void valuesEqual(Value a, Value b) {
 		case VALUE_NUMBER: push(makeBool(getNumber(a) == getNumber(b))); break;
 		case VALUE_BOOL: push(makeBool(getNumber(a) == getNumber(b))); break;
 		case VALUE_NIL: push(makeBool(0xFF)); break;
-		case VALUE_OBJ: push(objEqual(a, b)); break;
+		case VALUE_OBJ: push(makeBool(getObj(a) == getObj(b))); break;
 		default: break;
 	}
 }

@@ -33,6 +33,8 @@ uint32_t hashString(char *str, size_t length) {
 
 ObjString *copyString(char *start, size_t size) {
 	uint32_t hash = hashString(start, size);
+	ObjString *interned = tableFindString(&vm.strings, start, size, hash);
+	if(interned != NULL) return interned;
 	char *chars = ALLOCATE(char, size+1);
 	memcpy(chars, start, size);
 	chars[size] = '\0';
@@ -41,6 +43,11 @@ ObjString *copyString(char *start, size_t size) {
 
 ObjString *takeString(char *start, size_t size) {
 	uint32_t hash = hashString(start, size);
+	ObjString *interned = tableFindString(&vm.strings, start, size, hash);
+	if(interned != NULL) {
+		FREE_ARRAY(char, start, size+1);
+		return interned;
+	}
 	return allocateString(start, size, hash);
 }
 
@@ -49,6 +56,7 @@ ObjString *allocateString(char *cstr, size_t size, uint32_t hash) {
 	string->cstr = cstr;
 	string->length = size;
 	string->hash = hash;
+	tableSet(&vm.strings, string, makeNil());
 	return string;
 }
 
