@@ -15,10 +15,12 @@ void resetStack() {
 void initVM() {
 	resetStack();
 	tableInit(&vm.strings);
+	tableInit(&vm.globals);
 }
 
 void freeVM() {
 	tableFree(&vm.strings);
+	tableFree(&vm.globals);
 	freeObjects();
 }
 
@@ -123,6 +125,7 @@ InterpretResult run() {
 				push(makeBool(x o y));\
 	}while(0)
 
+#define READ_STRING() (getString(readConstant()))
 	while(1) {
 		#ifdef DEBUG_ENABLED
 			for(Value *v = vm.stack;v<vm.sp;v++) {
@@ -184,11 +187,33 @@ InterpretResult run() {
 			case OP_RETURN:
 				goto END;
 				break;
+			case OP_PRINT: {
+				printValue(pop());
+				printf("\n");
+				break;
+			}
+			case OP_POP: pop(); break;
+			case OP_DEFINE_GLOBAL: {
+				ObjString *name = READ_STRING();
+				tableSet(&vm.globals, name, pop());
+				break;
+			}
+			case OP_GET_GLOBAL: {
+				ObjString *name = READ_STRING();
+				Value v;
+				if(!tableGet(&vm.globals, name, &v)) {
+					runtimeError("Undefined variable %s", name->cstr);
+					return INTERPRET_RUNTIME_ERROR;
+				}
+				push(v);
+				break;
+			}
 		}
 	}
 END:
 	return INTERPRET_OK;
 #undef BINARY_OP
+#undef READ_STRING
 }
 
 InterpretResult interpret(char *source) {

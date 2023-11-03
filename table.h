@@ -23,6 +23,7 @@ typedef struct {
 
 void tableInit(Table *);
 void tableFree(Table *);
+uint8_t tableGet(Table *, ObjString *, Value*);
 void tableAddAll(Table *, Table *);
 uint8_t tableSet(Table *, ObjString *, Value);
 ObjString *tableFindString(Table *, char *, size_t, uint32_t);

@@ -40,8 +40,11 @@ Chunk *currentChunk();
 void errorAt(Token *, char *), errorAtCurrnt(char *), error(char *),
 addByte(uint8_t), endCompiler(), addReturn();
 
-static void advance(), consume(TokenType, char *), number(), boolean(), string();
-void expression(), parsePrec(Precedence), grouping(), unary(), binary();
+uint16_t identifierConstant(Token), parseVariable(char *);
+
+static void advance(), consume(TokenType, char *), number(), boolean(), string(), variable();
+static uint8_t check(TokenType), match(TokenType);
+void expression(), parsePrec(Precedence), grouping(), unary(), binary(), statement(), declaration(), printStatement();
 
 ParseRule rules[TOKEN_EOF+1] = {
   [TOKEN_LEFT_PAREN]    = {grouping, NULL,   PREC_NONE},
@@ -63,7 +66,7 @@ ParseRule rules[TOKEN_EOF+1] = {
   [TOKEN_GREATER_EQUAL] = {NULL,     binary,   PREC_COMPARISON},
   [TOKEN_LESS]          = {NULL,     binary,   PREC_COMPARISON},
   [TOKEN_LESS_EQUAL]    = {NULL,     binary,   PREC_COMPARISON},
-  [TOKEN_IDENTIFIER]    = {NULL,     NULL,   PREC_NONE},
+  [TOKEN_IDENTIFIER]    = {variable,     NULL,   PREC_NONE},
   [TOKEN_STRING]        = {string,     NULL,   PREC_NONE},
   [TOKEN_NUMBER]        = {number,   NULL,   PREC_NONE},
   [TOKEN_AND]           = {NULL,     NULL,   PREC_NONE},
@@ -112,6 +115,26 @@ void error(char *message) {
 	errorAt(&parser.prev, message);
 }
 
+void sync() {
+  parser.panicMode = 0;
+  while(parser.current.type != TOKEN_EOF) {
+    if(parser.prev.type == TOKEN_SEMICOLON) return;
+    switch(parser.current.type) {
+      case TOKEN_FOR:
+      case TOKEN_IF:
+      case TOKEN_VAR:
+      case TOKEN_WHILE:
+      case TOKEN_PRINT:
+      case TOKEN_RETURN:
+      case TOKEN_CLASS:
+      case TOKEN_FUN:
+        return;
+      default:
+        // nothing
+    }
+    advance();
+  }
+}
 
 static void advance() {
 	parser.prev = parser.current;
@@ -127,6 +150,15 @@ static void consume(TokenType type, char *message) {
 	advance();
 }
 
+static uint8_t match(TokenType type) {
+  if(!check(type)) return 0;
+  advance();
+  return 1;
+}
+
+static uint8_t check(TokenType type) {
+  return (parser.current.type == type);
+}
 
 void addByte(uint8_t b) {
 	writeChunk(currentChunk(), b, parser.prev.line); 
@@ -139,6 +171,22 @@ void addBytes(uint8_t b1, uint8_t b2) {
 
 void addReturn() {
 	addByte(OP_RETURN);
+}
+
+uint16_t makeConstant(Value v) {
+	uint32_t index = addConstant(currentChunk(), v);
+	if(index > 255) {
+		writeChunk(currentChunk(), OP_CONSTANT_LONG, parser.prev.line);
+		writeChunk(currentChunk(), index & 0xFF, parser.prev.line);
+		writeChunk(currentChunk(), index >> 8, parser.prev.line);
+	} else if(index < UINT16_MAX) {
+		writeChunk(currentChunk(), OP_CONSTANT, parser.prev.line);
+		writeChunk(currentChunk(), index, parser.prev.line);
+	} else {
+		error("Too many constants in one chunk, max is [0xFFFF] constants");
+    return 0;
+	}
+  return index;
 }
 
 void endCompiler() {
@@ -155,15 +203,14 @@ static void boolean() {
   }
 }
 
+
 static void number() {
 	double value = strtod(parser.prev.start, NULL);
-	if(writeConstant(currentChunk(), makeNumber(value), parser.prev.line)) {
-		error("Too many constants in one chunk, constants number can only be in the range [0x00-0xFFFF]");
-	}
+  makeConstant(makeNumber(value));
 }
 
 static void string() {
-  writeConstant(currentChunk(), makeObj((Obj *)copyString(parser.prev.start + 1llu, parser.prev.length - 2)), parser.prev.line);
+  makeConstant(makeObj((Obj *)copyString(parser.prev.start + 1llu, parser.prev.length - 2)));
 }
 
 
@@ -205,6 +252,15 @@ void binary() {
 	}
 }
 
+void namedVariable(Token t) {
+  uint16_t num = identifierConstant(t);
+  addBytes(OP_GET_GLOBAL, num); 
+}
+
+static void variable() {
+  namedVariable(parser.prev);
+}
+
 void parsePrec(Precedence prec) {
 	advance();	
 	ParseRule *prefixRule = getRule(parser.prev.type);
@@ -221,8 +277,61 @@ void parsePrec(Precedence prec) {
 	}
 }
 
+void printStatement() {
+  expression();
+  consume(TOKEN_SEMICOLON, "expected ';' after value.");
+  addByte(OP_PRINT);
+}
+
+void expressionStatement() {
+  expression();
+  consume(TOKEN_SEMICOLON, "expected ';' after expression.");
+  addByte(OP_POP);
+}
+
+uint16_t identifierConstant(Token t) {
+  return makeConstant(makeObj(copyString(t.start, t.length)));
+}
+
+uint16_t parseVariable(char *errorMessage) {
+  consume(TOKEN_IDENTIFIER, errorMessage);
+  return identifierConstant(parser.prev);
+}
+
+void defineVariable(uint16_t global) {
+  addBytes(OP_DEFINE_GLOBAL, global);
+}
+
+void varDeclare() {
+  uint16_t global = parseVariable("Expected variable name.");
+  if(match(TOKEN_EQUAL)) {
+    expression();
+  } else {
+    addByte(OP_NIL);
+  }
+  consume(TOKEN_SEMICOLON, "expected ';' after variable declaration.");
+  defineVariable(global);
+}
+
 void expression() {
 	parsePrec(PREC_ASSIGNMENT);
+}
+
+
+void statement() {
+  if(match(TOKEN_PRINT)) {
+    printStatement();
+  } else {
+    expressionStatement();
+  }
+}
+
+void declaration() {
+  if(match(TOKEN_VAR)) {
+    varDeclare();
+  } else {
+    statement();
+  }
 }
 
 uint8_t compile(char *source, Chunk *chunk) {
@@ -231,8 +340,9 @@ uint8_t compile(char *source, Chunk *chunk) {
 	parser.panicMode = 0;
 	compillingChunk = chunk;
 	advance();
-	expression();
-	consume(TOKEN_EOF, "Expect end of expression\n");
+  while(!match(TOKEN_EOF)) {
+    declaration();
+  }
 	endCompiler();
 	return !(parser.hadError);
 }

@@ -27,7 +27,7 @@ void writeChunk(Chunk *chunk, uint8_t byte, size_t line) {
 }
 
 
-uint16_t addConstant(Chunk *chunk, Value val) {
+uint32_t addConstant(Chunk *chunk, Value val) {
 	writeValueArray(&chunk->constants, val);
 	return chunk->constants.used - 1;
 }

@@ -23,6 +23,10 @@ typedef enum {
 	OP_GREATER,
 	OP_LESS,
 	OP_RETURN,
+	OP_PRINT,
+	OP_POP,
+	OP_DEFINE_GLOBAL,
+	OP_GET_GLOBAL,
 } OPCODE;
 
 typedef struct {
@@ -36,7 +40,7 @@ typedef struct {
 void initChunk(Chunk *);
 void freeChunk(Chunk *);
 void writeChunk(Chunk *, uint8_t, size_t );
-uint16_t addConstant(Chunk *, Value); // return index of the constant 
+uint32_t addConstant(Chunk *, Value); // return index of the constant 
 uint8_t writeConstant(Chunk *, Value v, size_t);
 
 #endif
