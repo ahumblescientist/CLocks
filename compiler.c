@@ -27,7 +27,7 @@ typedef enum {
 	PREC_PRIMARY
 } Precedence;
 
-typedef void (*ParseFn)(void);
+typedef void (*ParseFn)(uint8_t);
 
 typedef struct {
 	ParseFn prefix;
@@ -42,9 +42,9 @@ addByte(uint8_t), endCompiler(), addReturn();
 
 uint16_t identifierConstant(Token), parseVariable(char *);
 
-static void advance(), consume(TokenType, char *), number(), boolean(), string(), variable();
+static void advance(), consume(TokenType, char *), number(uint8_t), boolean(uint8_t), string(uint8_t), variable(uint8_t);
 static uint8_t check(TokenType), match(TokenType);
-void expression(), parsePrec(Precedence), grouping(), unary(), binary(), statement(), declaration(), printStatement();
+void expression(), parsePrec(Precedence), grouping(uint8_t), unary(uint8_t), binary(uint8_t), statement(), declaration(), printStatement();
 
 ParseRule rules[TOKEN_EOF+1] = {
   [TOKEN_LEFT_PAREN]    = {grouping, NULL,   PREC_NONE},
@@ -193,7 +193,7 @@ void endCompiler() {
 	addReturn();
 }
 
-static void boolean() {
+static void boolean(uint8_t bool_template) {
   if(parser.prev.type == TOKEN_TRUE) {
     addByte(OP_TRUE);
   } else if(parser.prev.type == TOKEN_FALSE) {
@@ -204,12 +204,12 @@ static void boolean() {
 }
 
 
-static void number() {
+static void number(uint8_t bool_template) {
 	double value = strtod(parser.prev.start, NULL);
   makeConstant(makeNumber(value));
 }
 
-static void string() {
+static void string(uint8_t bool_template) {
   makeConstant(makeObj((Obj *)copyString(parser.prev.start + 1llu, parser.prev.length - 2)));
 }
 
@@ -218,12 +218,12 @@ ParseRule *getRule(TokenType type) {
 	return &rules[type];
 }
 
-void grouping() {
+void grouping(uint8_t bool_template) {
 	expression();
 	consume(TOKEN_RIGHT_PAREN, "Expected ')' after expression.");
 }
 
-void unary() {
+void unary(uint8_t bool_template) {
 	TokenType operator = parser.prev.type;
 	parsePrec(PREC_UNARY);
 	switch(operator) {
@@ -233,7 +233,7 @@ void unary() {
 	}
 }
 
-void binary() {
+void binary(uint8_t bool_template) {
 	TokenType operator = parser.prev.type;
 	ParseRule *rule = getRule(operator);
 	parsePrec((Precedence)(rule->precedence + 1));
@@ -252,13 +252,18 @@ void binary() {
 	}
 }
 
-void namedVariable(Token t) {
+void namedVariable(Token t, uint8_t c) {
   uint16_t num = identifierConstant(t);
-  addBytes(OP_GET_GLOBAL, num); 
+  if(c && match(TOKEN_EQUAL)) {
+    expression();
+    addBytes(OP_SET_GLOBAL, num);
+  } else {
+    addBytes(OP_GET_GLOBAL, num);
+  }
 }
 
-static void variable() {
-  namedVariable(parser.prev);
+static void variable(uint8_t c) {
+  namedVariable(parser.prev, c);
 }
 
 void parsePrec(Precedence prec) {
@@ -268,11 +273,15 @@ void parsePrec(Precedence prec) {
 		error("Invalid expression.");
 		return;
 	}
-	prefixRule->prefix();
+  uint8_t canAssign = prec <= PREC_ASSIGNMENT;
+	prefixRule->prefix(canAssign);
+  if(canAssign && match(TOKEN_EQUAL)) {
+    error("Invalid assignment.");
+  }
 	ParseRule *currentRule = getRule(parser.current.type);
 	while(currentRule->precedence >= prec) {
 		advance();
-		currentRule->infix();
+		currentRule->infix(0);
     currentRule = getRule(parser.current.type);
 	}
 }
@@ -299,7 +308,12 @@ uint16_t parseVariable(char *errorMessage) {
 }
 
 void defineVariable(uint16_t global) {
-  addBytes(OP_DEFINE_GLOBAL, global);
+  if(global >= UINT16_MAX) {
+    addByte(OP_DEFINE_GLOBAL_LONG);
+    addBytes(global & 0xFF, global >> 8);
+  } else {
+    addBytes(OP_DEFINE_GLOBAL, global);
+  }
 }
 
 void varDeclare() {

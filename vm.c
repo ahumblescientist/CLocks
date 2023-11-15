@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define DEBUG_ENABLED
+#undef DEBUG_ENABLED
 
 VM vm;
 
@@ -126,6 +127,7 @@ InterpretResult run() {
 	}while(0)
 
 #define READ_STRING() (getString(readConstant()))
+#define READ_STRING_LONG() (getString(readConstantLong()))
 	while(1) {
 		#ifdef DEBUG_ENABLED
 			for(Value *v = vm.stack;v<vm.sp;v++) {
@@ -193,9 +195,15 @@ InterpretResult run() {
 				break;
 			}
 			case OP_POP: pop(); break;
+			case OP_DEFINE_GLOBAL_LONG: {
+				ObjString *name = READ_STRING_LONG();
+				tableSet(&vm.globals, name, peek(0));
+				pop();
+			}
 			case OP_DEFINE_GLOBAL: {
 				ObjString *name = READ_STRING();
-				tableSet(&vm.globals, name, pop());
+				tableSet(&vm.globals, name, peek(0));
+				pop();
 				break;
 			}
 			case OP_GET_GLOBAL: {
@@ -207,13 +215,25 @@ InterpretResult run() {
 				}
 				push(v);
 				break;
+		 }
+		 case OP_SET_GLOBAL: {
+			ObjString *name = READ_STRING();
+			Value temp_value;
+			uint8_t k = tableGet(&vm.globals, name, &temp_value);
+			if(k == 0) {
+				runtimeError("Undefined variable %s", name->cstr);
+				return INTERPRET_RUNTIME_ERROR;
 			}
+			tableSet(&vm.globals, name, peek(0));
+			break;
+		 }
 		}
 	}
 END:
 	return INTERPRET_OK;
 #undef BINARY_OP
 #undef READ_STRING
+#undef READ_STRING_LONG
 }
 
 InterpretResult interpret(char *source) {
